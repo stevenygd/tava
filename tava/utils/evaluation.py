@@ -2,6 +2,7 @@
 import logging
 import os
 
+from PIL import Image
 import imageio
 import numpy as np
 import torch
@@ -83,19 +84,31 @@ def eval_epoch(
             image_path = os.path.join(
                 save_dir, f"{index:04d}_{sid}_{meta_id}_{cid}.png"
             )
-            imageio.imwrite(
-                image_path,
-                np.uint8(img_to_save.cpu().numpy() * 255.0),
-            )
-            imageio.imwrite(
-                image_path.replace(".png", "_mask.png"),
-                np.uint8(pred_acc.cpu().numpy() * 255.0),
-            )
+            Image.fromarray(
+                np.uint8(img_to_save.cpu().numpy() * 255.0)).save(image_path)
+            # imageio.imwrite(
+            #     image_path,
+            #     np.uint8(img_to_save.cpu().numpy() * 255.0),
+            # )
+            # if pred_acc.shape[-1] == 1:
+            #     pred_acc = pred_acc[..., 0]
+            # print(pred_acc.shape)
+            # imageio.imwrite(
+                # image_path.replace(".png", "_mask.png"),
+                # np.uint8(pred_acc.cpu().numpy() * 255.0),
+            # )
+            np_img = np.uint8(pred_acc.cpu().numpy() * 255.0)[..., 0]
+            Image.fromarray(np_img).save(
+                image_path.replace(".png", "_mask.png"))
             if pred_warp.shape[-1] == 3:
                 imageio.imwrite(
                     image_path.replace(".png", ".exr"),
                     np.float32(pred_warp.cpu().numpy()),
                 )
+                # np_img = np.float32(pred_warp.cpu().numpy())
+                # print(np_img.shape, np_img.dtype, np_img.max(), np_img.min()) 
+                # Image.fromarray(np_img).save(
+                #         image_path.replace(".png", ".exr"))
             else:
                 np.save(
                     image_path.replace(".png", ".npy"),

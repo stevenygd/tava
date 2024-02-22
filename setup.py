@@ -4,7 +4,8 @@ import setuptools
 
 INSTALL_REQUIREMENTS = [
     "imageio[freeimage]",
-    "numpy==1.22.3",
+    # "numpy==1.22.3",
+    "numpy==1.22.4",
     "opencv-python==4.5.5.64",
     "matplotlib==3.5.1",
     "scikit-image==0.19.2",

@@ -1,0 +1,19 @@
+_target_: tava.datasets.humanrf_loader.SubjectLoader
+
+subject_id: 313
+root_fp: "/home/guandao/tava/data/actorhq_dataset/"
+split: ???  # to be defined in the code
+resize_factor: 0.5
+color_bkgd_aug: "random"
+num_rays: 1024
+cache_n_repeat: 5
+near: null
+far: null
+legacy: true
+
+# parameters used by models
+# pose_latent_dim: 78
+pose_latent_dim: 10 # TODO: why is this different?
+n_transforms: 19
+world_dist: 0.3
+cano_dist: 0.3

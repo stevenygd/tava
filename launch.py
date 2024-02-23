@@ -6,7 +6,7 @@ import os
 import random
 from os import path
 from typing import Any
-
+import wandb
 import hydra
 import numpy as np
 import torch
@@ -71,6 +71,7 @@ def _distributed_worker(
 
 
 def _run(cfg: DictConfig, hydra_config: DictConfig) -> float:
+    wandb.login()
     assert torch.cuda.is_available(), "CUDA device is required!"
     assert cfg.percision in ["float32", "float64"]
     world_size = torch.cuda.device_count()

@@ -25,7 +25,8 @@ def process_camera(root_dir, downscale_factor : int =4):
    
     # NOTE: use full resolution
     meta_info = {"cam_names": []}
-    cameras_info =  {"D": [], "K": [], "R": [], "T": [], "w2c": []}
+    cameras_info =  {"D": [], "K": [], "R": [], "T": [], "w2c": [], 
+                     "heights": [], "widths": []}
     for camera in cameras:
         # camera.camera
         camera = camera.get_downscaled_camera(downscale_factor=downscale_factor)
@@ -43,6 +44,8 @@ def process_camera(root_dir, downscale_factor : int =4):
         cameras_info["w2c"].append(w2c)
         cameras_info["R"].append(R)
         cameras_info["T"].append(T)
+        cameras_info["heights"].append(camera.height * np.ones((1,)))
+        cameras_info["widths"].append(camera.width * np.ones((1,)))
         print("=" * 80)
         print(camera.name)
         print("-" * 80)
@@ -169,52 +172,46 @@ def process_pose(pose_dir, fids, rest_frame=0):
 
 def process_split(out_dir, subject_id, fids, cnames):
     os.makedirs(osp.join(out_dir, "splits"), exist_ok=True)
+    
+    def make_split(train_fid_filter, train_cam_filter):
+        train_fids = [i for i, fid in enumerate(fids) 
+                      if train_fid_filter(fid)]
+        train_cams = [cid for cid, cname in enumerate(cnames)
+                      if train_cam_filter(cname)]
+        train_split = {"fids": train_fids, "cams": train_cams}
+        
+        test_fids = [i for i, fid in enumerate(fids) 
+                     if not train_fid_filter(fid)]
+        test_cams = [cid for cid, cname in enumerate(cnames)
+                     if not train_cam_filter(cname)]
+        test_split = {"fids": test_fids, "cams": test_cams}
+        return {
+            "train": train_split, 
+            "test": test_split
+        }
     if subject_id == 1:
         _train_fid_filter_ = lambda fid: fid < 460
         _train_cam_filter_ = lambda cname: int(cname[len("Cam"):]) not in [7]
         
-        train_fids = [i for i, fid in enumerate(fids) 
-                      if _train_fid_filter_(fid)]
-        train_cams = [cid for cid, cname in enumerate(cnames)
-                      if _train_cam_filter_(cname)]
-        train_split = {"fids": train_fids, "cams": train_cams}
-        np.save(osp.join(out_dir, "splits", "train.npy"), train_split)
-        
-        _test_fid_filter_ = lambda fid: fid >= 460 and fid <= 660
-        _test_cam_filter_ = lambda cname: int(cname[len("Cam"):]) in [7]
-        test_fids = [i for i, fid in enumerate(fids) 
-                     if _test_fid_filter_(fid)]
-        test_cams = [cid for cid, cname in enumerate(cnames)
-                     if _test_cam_filter_(cname)]
-        test_split = {"fids": test_fids, "cams": test_cams}
-        np.save(osp.join(out_dir, "splits", "test.npy"), test_split)
-        return {
-            "train": train_split, 
-            "test": test_split
-        }
     elif subject_id == 2:
-        _train_fid_filter_ = lambda fid: not (fid <= 930 and fid <= 1130)
+        _train_fid_filter_ = lambda fid: not (fid >= 930 and fid <= 1130)
         _train_cam_filter_ = lambda cname: int(cname[len("Cam"):]) not in [7]
         
-        train_fids = [i for i, fid in enumerate(fids) if _train_fid_filter_(fid)]
-        train_cams = [cid for cid, cname in enumerate(cnames)
-                      if _train_cam_filter_(cname)]
-        train_split = {"fids": train_fids, "cams": train_cams}
-        np.save(osp.join(out_dir, "splits", "train.npy"), train_split)
+    elif subject_id == 3:
+        _train_fid_filter_ = lambda fid: not (fid >= 560 and fid <= 719)
+        _train_cam_filter_ = lambda cname: int(cname[len("Cam"):]) not in [7]
         
-        _test_fid_filter_ = lambda fid: fid >= 930 and fid <= 1130 
-        _test_cam_filter_ = lambda cname: int(cname[len("Cam"):]) in [7]
-        test_fids = [i for i, fid in enumerate(fids) if _test_fid_filter_(fid)]
-        test_cams = [cid for cid, cname in enumerate(cnames)
-                     if _test_cam_filter_(cname)]
-        test_split = {"fids": test_fids, "cams": test_cams}
-        np.save(osp.join(out_dir, "splits", "test.npy"), test_split)
-        return {
-            "train": train_split, 
-            "test": test_split
-        }
+    elif subject_id == 6:
+        _train_fid_filter_ = lambda fid: not (fid >= 630 and fid <= 849)
+        _train_cam_filter_ = lambda cname: int(cname[len("Cam"):]) not in [7]
+        
     else:
         raise NotImplemented
+    
+    split_info = make_split(_train_fid_filter_, _train_cam_filter_)
+    np.save(osp.join(out_dir, "splits", "train.npy"), split_info["train"])
+    np.save(osp.join(out_dir, "splits", "test.npy"), split_info["test"])
+    return split_info
 
 
 if __name__ == "__main__":

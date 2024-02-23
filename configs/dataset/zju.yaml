@@ -5,7 +5,8 @@ root_fp: "./data/zju/"
 split: ???  # to be defined in the code
 resize_factor: 0.5
 color_bkgd_aug: "random"
-num_rays: 1024
+# num_rays: 1024
+num_rays: 4096 
 cache_n_repeat: 5
 near: null
 far: null

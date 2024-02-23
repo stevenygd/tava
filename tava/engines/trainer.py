@@ -22,6 +22,7 @@ from tava.utils.training import (
 )
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
+import wandb
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,6 +39,8 @@ class Trainer(AbstractEngine):
         cfg: DictConfig,
     ) -> None:
         super().__init__(local_rank, world_size, cfg)
+        # TODO:Setup wandb
+        
         # setup tensorboard
         # must be after model resuming for `self.init_step`` to be updated.
         self.tb_writer = SummaryWriter(

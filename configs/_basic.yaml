@@ -1,6 +1,6 @@
 # A basic config shared by others.
 
-distributed: true
+distributed: false 
 resume: false
 resume_step: null
 resume_dir: null

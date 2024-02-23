@@ -1,6 +1,6 @@
 #! /bin/bash
 
-CUDA_VISIBLE_DEVICES=9 python launch.py \
+CUDA_VISIBLE_DEVICES=7 python launch.py \
     --config-name=mipnerf_dyn_humanrf \
     dataset=humanrf\
     dataset.subject_id=02 \

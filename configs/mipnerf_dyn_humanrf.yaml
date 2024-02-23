@@ -2,7 +2,7 @@
 
 defaults:
   - _basic  # inherit configs from _basic.yaml
-  - dataset: zju  # ["zju", "animal"]
+  - dataset: humanrf # ["zju", "animal"]
   - pos_enc: snarf  # ["snarf", "narf"]
   - engine: trainer  # ["trainer", "evaluator"]
   - _self_

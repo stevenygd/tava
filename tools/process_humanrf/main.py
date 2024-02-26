@@ -93,6 +93,8 @@ def process_imgs(root_dir, camera_names):
         if has_all_data:
             fids.add(fid) 
             pbar.set_description("Valid:%d" % len(fids))
+            # if len(fids) > 2:
+            #     break
             
     fids = list(fids)
     fids = sorted(fids) # ascending order
@@ -143,16 +145,29 @@ def process_pose(pose_dir, fids, rest_frame=0):
         "tf_bones": [],         # N x 24 x 4 x 4,
         "params": [],           # N x 78 (or dim input) - use beta here
     }
-    # Load shape
+    # # Load shape
     bodymodel = pickle.load(open(
         "/home/guandao/lagrangian_gaussian_splatting/smplx/body_models/smpl/SMPL_NEUTRAL.pkl", 
         "rb"), 
         encoding="latin1")
-    pose_data["rest_verts"] = np.array(bodymodel["v_template"]) # 6890 x 3
-    pose_data["rest_joints"] = np.array(bodymodel["J"]) # 24 x 3
-    pose_data["rest_tfs_bone"] = np.repeat(np.eye(4)[None, ...], 24, axis=0)
+    pose_data["lbs_weights"] = bodymodel["weights"].astype(np.float32)
+    # pose_data["rest_verts"] = np.array(bodymodel["v_template"]) # 6890 x 3
+    # pose_data["rest_joints"] = np.array(bodymodel["J"]) # 24 x 3
+    # pose_data["rest_tfs_bone"] = np.repeat(np.eye(4)[None, ...], 24, axis=0)
     print("Processing pose...")
     for fid in tqdm.tqdm(fids):
+        if rest_frame == fid:
+            pose = np.load(osp.join(pose_dir, f"{fid:06d}.pkl"), allow_pickle=True)
+            pose_data["rest_verts"] = pose["vertices"].cpu().detach().numpy().reshape(6890, 3)
+            pose_data["rest_joints"] = pose["joints"][:, :24].cpu().detach().numpy().reshape(24, 3)
+            tf_bones = pose["bone_transform_mat"][0] # 24x4x4
+            global_transform = torch.eye(4)
+            global_transform[:3, -1] = pose["transl"][0]
+            global_transform = global_transform[None, ...].repeat(
+                tf_bones.shape[0], 1, 1)
+            tf_bones = torch.bmm(global_transform.to(tf_bones.device), tf_bones)
+            tf_bones = tf_bones.cpu().detach().numpy().reshape(24, 4, 4)
+            pose_data["rest_tfs_bone"] = tf_bones
         pose = np.load(osp.join(pose_dir, f"{fid:06d}.pkl"), allow_pickle=True)
         # All other frames
         # 1 x 6890 x 3
@@ -160,7 +175,13 @@ def process_pose(pose_dir, fids, rest_frame=0):
         # 1 x 45->24 x 3
         pose_data["joints"].append(pose["joints"][:, :24].cpu().detach().numpy()) 
         # 1 x 24 x 4 x 4
-        pose_data["tf_bones"].append(pose["transform_mat"].cpu().detach().numpy())
+        tf_bones = pose["bone_transform_mat"][0] # 24x4x4
+        global_transform = torch.eye(4)
+        global_transform[:3, -1] = pose["transl"][0]
+        global_transform = global_transform[None, ...].repeat(
+            tf_bones.shape[0], 1, 1)
+        tf_bones = torch.bmm(global_transform.to(tf_bones.device), tf_bones)
+        pose_data["tf_bones"].append(tf_bones[None, ...].cpu().detach().numpy())
         # 1 x 10
         pose_data["params"].append(pose["betas"].cpu().detach().numpy())
     # for k in ["verts", "joints", "tfs", "tf_bones", "params"]:
@@ -217,9 +238,9 @@ def process_split(out_dir, subject_id, fids, cnames):
 if __name__ == "__main__":
     # Process HumanRF data into a format similar to ZJU
     subject_id = int(sys.argv[1])
-    root_dir = "data/actorhq_dataset/Actor%02d/Sequence1/4x/" % subject_id
-    pose_dir = "data/actorhq_dataset/Actor%02d/Sequence1/4x/tava/smpl" % subject_id
-    out_dir = "data/actorhq_dataset/Actor%02d/Sequence1/4x/tava/" % subject_id
+    root_dir = "/home/guandao/tava/data/actorhq_dataset/Actor%02d/Sequence1/4x/" % subject_id
+    pose_dir = "/home/guandao/tava/data/actorhq_dataset/Actor%02d/Sequence1/4x/tava/smpl" % subject_id
+    out_dir = "/home/guandao/tava/data/actorhq_dataset/Actor%02d/Sequence1/4x/tava/" % subject_id
     os.makedirs(out_dir, exist_ok=True)
     camera_info, camera_meta_info = process_camera(root_dir)
     img_fnames, mask_fnames, frames_meta_info = process_imgs(
@@ -232,7 +253,8 @@ if __name__ == "__main__":
     np.save(osp.join(out_dir, "annots.npy"), annots)
     
     # Handle pose
-    pose_data = process_pose(pose_dir, frames_meta_info["fids"])
+    pose_data = process_pose(pose_dir, frames_meta_info["fids"], 
+                             rest_frame=frames_meta_info["fids"][0])
     np.save(osp.join(out_dir, "pose_data.npy"), pose_data)
     
     # Split

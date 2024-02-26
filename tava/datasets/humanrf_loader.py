@@ -132,6 +132,8 @@ class SubjectLoader(CachedIterDataset):
         K = self.parser.cameras["K"][camera_id].copy()
         w2c = self.parser.cameras["w2c"][camera_id].copy()
         D = self.parser.cameras["D"][camera_id].copy()
+        height = int(self.parser.cameras["heights"][camera_id].copy())
+        width = int(self.parser.cameras["widths"][camera_id].copy())
 
         # create pixels
         rgba = np.concatenate(
@@ -161,12 +163,12 @@ class SubjectLoader(CachedIterDataset):
             intrins=torch.from_numpy(K).to(self.dtype),
             extrins=torch.from_numpy(w2c).to(self.dtype),
             distorts=None,
-            width=self.parser.WIDTH,
-            height=self.parser.HEIGHT,
+            # width=self.parser.WIDTH,
+            # height=self.parser.HEIGHT,
+            width=width,
+            height=height,
         )
-        # print("Parser width :", self.parser.WIDTH)
-        # print("Parser height:", self.parser.HEIGHT)
-        # cameras = transform_cameras(cameras, self.resize_factor)
+        cameras = transform_cameras(cameras, self.resize_factor)
         rays = generate_rays(
             cameras, opencv_format=True, near=self.near, far=self.far
         )

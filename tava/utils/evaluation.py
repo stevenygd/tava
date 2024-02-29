@@ -45,7 +45,7 @@ def eval_epoch(
     index_list_all = list(range(len(dataset)))[::render_every]
     index_list = index_list_all[local_rank::world_size]
 
-    for i, index in enumerate(index_list):
+    for i, index in tqdm(enumerate(index_list)):
         LOGGER.info(
             "Processing %d/%d in Rank %d!"
             % (i + 1, len(index_list), local_rank)
@@ -76,6 +76,8 @@ def eval_epoch(
         # save images
         if save_dir is not None:
             img_to_save = torch.cat([pred_color, pixels], dim=1)
+            pred_img = pred_color
+            gtr_img = pixels
             sid, meta_id, cid = (
                 data.get("subject_id", ""),
                 data.get("meta_id", ""),
@@ -86,17 +88,19 @@ def eval_epoch(
             )
             Image.fromarray(
                 np.uint8(img_to_save.cpu().numpy() * 255.0)).save(image_path)
-            # imageio.imwrite(
-            #     image_path,
-            #     np.uint8(img_to_save.cpu().numpy() * 255.0),
-            # )
-            # if pred_acc.shape[-1] == 1:
-            #     pred_acc = pred_acc[..., 0]
-            # print(pred_acc.shape)
-            # imageio.imwrite(
-                # image_path.replace(".png", "_mask.png"),
-                # np.uint8(pred_acc.cpu().numpy() * 255.0),
-            # )
+            
+            pred_image_path = os.path.join(
+                save_dir, f"{index:04d}_{sid}_{meta_id}_{cid}_pred.png"
+            )
+            Image.fromarray(
+                np.uint8(pred_img.cpu().numpy() * 255.0)).save(pred_image_path)
+            
+            gtr_image_path = os.path.join(
+                save_dir, f"{index:04d}_{sid}_{meta_id}_{cid}_pred.png"
+            )
+            Image.fromarray(
+                np.uint8(gtr_img.cpu().numpy() * 255.0)).save(gtr_image_path)
+            
             np_img = np.uint8(pred_acc.cpu().numpy() * 255.0)[..., 0]
             Image.fromarray(np_img).save(
                 image_path.replace(".png", "_mask.png"))

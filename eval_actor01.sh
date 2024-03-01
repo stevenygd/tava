@@ -13,7 +13,7 @@
 #     hydra.run.dir=/home/guandao/tava/pretrained/actor01
 
 
-ARGS_EVAL="engine=evaluator eval_cache_dir=eval_imgs_c007f605 compute_metrics=true resume=true eval_per_gpu=1000 test_chunk=8192 eval_splits=['cam007_fid605']"
+ARGS_EVAL="engine=evaluator eval_cache_dir=eval_imgs compute_metrics=true resume=true eval_per_gpu=1000 test_chunk=8192 eval_splits=['cam007_fid605']"
 python launch.py \
     --config-name=mipnerf_dyn_humanrf \
     dataset=humanrf \

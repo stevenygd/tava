@@ -1,6 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 import os
-
+import re
 import cv2
 import numpy as np
 import torch
@@ -14,6 +14,14 @@ from tava.utils.transforms import axis_angle_to_matrix, matrix_to_rotation_6d
 def _dataset_view_split(parser: SubjectParser, split: str):
     if split == "all":
         camera_ids = parser._camera_ids
+    elif re.match("cam[0-9]*_fid[0-9]*", split):
+        meta_data = np.load(
+            os.path.join(parser.root_dir, "tava/meta_data.npy"),
+            allow_pickle=True
+        ).item()
+        cname = "Cam%03d" % int(split.split("_")[0][len("cam"):])
+        cid = meta_data["cam_names"].index(cname)
+        camera_ids = [cid]
     else:
         splits_fp = os.path.join(parser.root_dir, f"tava/splits/{split}.npy")
         splits_info = np.load(splits_fp, allow_pickle=True).item()
@@ -23,12 +31,20 @@ def _dataset_view_split(parser: SubjectParser, split: str):
 
 def _dataset_frame_split(parser: SubjectParser, split: str):
     if split == "all":
-        camera_ids = parser._frame_ids
+        frame_ids = parser._frame_ids
+    elif re.match("cam[0-9]*_fid[0-9]*", split):
+        meta_data = np.load(
+            os.path.join(parser.root_dir, "tava/meta_data.npy"),
+            allow_pickle=True
+        ).item()
+        fname = int(split.split("_")[0][len("fid"):])
+        fid = meta_data["fids"].index(fname)
+        frame_ids = [fid]
     else:
         splits_fp = os.path.join(parser.root_dir, f"tava/splits/{split}.npy")
         splits_info = np.load(splits_fp, allow_pickle=True).item()
-        camera_ids = splits_info["fids"]
-    return camera_ids
+        frame_ids = splits_info["fids"]
+    return frame_ids
 
 def _dataset_index_list(parser, split):
     camera_ids = _dataset_view_split(parser, split)
@@ -41,8 +57,6 @@ def _dataset_index_list(parser, split):
 
 class SubjectLoader(CachedIterDataset):
     """Single subject data loader for training and evaluation."""
-
-    SPLIT = ["all", "train",  "test"]
 
     def __init__(
         self,
@@ -58,7 +72,6 @@ class SubjectLoader(CachedIterDataset):
         legacy: bool = False,
         **kwargs,
     ):
-        assert split in self.SPLIT, "%s" % split
         assert color_bkgd_aug in ["white", "black", "random"]
         # self.resize_factor = resize_factor
         self.resize_factor = 1

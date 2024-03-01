@@ -96,7 +96,7 @@ def eval_epoch(
                 np.uint8(pred_img.cpu().numpy() * 255.0)).save(pred_image_path)
             
             gtr_image_path = os.path.join(
-                save_dir, f"{index:04d}_{sid}_{meta_id}_{cid}_pred.png"
+                save_dir, f"{index:04d}_{sid}_{meta_id}_{cid}_gtr.png"
             )
             Image.fromarray(
                 np.uint8(gtr_img.cpu().numpy() * 255.0)).save(gtr_image_path)

@@ -37,7 +37,7 @@ def _dataset_frame_split(parser: SubjectParser, split: str):
             os.path.join(parser.root_dir, "tava/meta_data.npy"),
             allow_pickle=True
         ).item()
-        fname = int(split.split("_")[0][len("fid"):])
+        fname = int(split.split("_")[1][len("fid"):])
         fid = meta_data["fids"].index(fname)
         frame_ids = [fid]
     else:

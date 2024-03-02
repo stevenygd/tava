@@ -93,7 +93,7 @@ class SubjectParser:
         18,
     ]
 
-    def __init__(self, subject_id: int, root_fp: str):
+    def __init__(self, subject_id: int, root_fp: str, post_fix: str = ""):
 
         if not root_fp.startswith("/"):
             # allow relative path. e.g., "./data/zju/"
@@ -106,7 +106,10 @@ class SubjectParser:
         self.subject_id = subject_id
         self.root_fp = root_fp
         self.root_dir = os.path.join(
-            root_fp, "Actor0%d" % int(subject_id), "Sequence1", "4x")
+            root_fp, 
+            "Actor0%d%s" % (int(subject_id), post_fix), 
+            "Sequence1",
+            "4x")
 
         self.mask_dir = os.path.join(self.root_dir)
         self.splits_dir = os.path.join(self.root_dir, "splits")

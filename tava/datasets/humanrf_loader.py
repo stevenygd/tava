@@ -38,6 +38,7 @@ def _dataset_frame_split(parser: SubjectParser, split: str):
             allow_pickle=True
         ).item()
         fname = int(split.split("_")[1][len("fid"):])
+        breakpoint()
         fid = meta_data["fids"].index(fname)
         frame_ids = [fid]
     else:
@@ -65,11 +66,13 @@ class SubjectLoader(CachedIterDataset):
         split: str,
         resize_factor: float = 1.0,
         color_bkgd_aug: str = None,
+        color_bkgd: str = "black",
         num_rays: int = None,
         cache_n_repeat: int = 0,
         near: float = None,
         far: float = None,
         legacy: bool = False,
+        post_fix: str = "",
         **kwargs,
     ):
         assert color_bkgd_aug in ["white", "black", "random"]
@@ -83,7 +86,9 @@ class SubjectLoader(CachedIterDataset):
         self.legacy = legacy
         self.training = (num_rays is not None) and (split in ["train", "all"])
         self.color_bkgd_aug = color_bkgd_aug
-        self.parser = SubjectParser(subject_id=subject_id, root_fp=root_fp)
+        self.color_bkgd = color_bkgd
+        self.parser = SubjectParser(
+            subject_id=subject_id, root_fp=root_fp, post_fix=post_fix)
         self.index_list = _dataset_index_list(self.parser, split)
         self.dtype = torch.get_default_dtype()
         super().__init__(self.training, cache_n_repeat)
@@ -111,7 +116,11 @@ class SubjectLoader(CachedIterDataset):
                 color_bkgd = torch.zeros(3, dtype=rgba.dtype)
         else:
             # just use black during inference
-            color_bkgd = torch.zeros(3, dtype=rgba.dtype)
+            if self.color_bkgd == "white":
+                # Change to white background!
+                color_bkgd = torch.ones(3, dtype=rgba.dtype)
+            else:
+                color_bkgd = torch.zeros(3, dtype=rgba.dtype)
 
         # only replace regions with `alpha == 0` to `color_bkgd`
         image = image * (alpha != 0) + color_bkgd * (alpha == 0)

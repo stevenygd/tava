@@ -109,8 +109,6 @@ class SubjectParser:
             root_fp, "Actor0%d" % int(subject_id), "Sequence1", "4x")
 
         self.mask_dir = os.path.join(self.root_dir)
-        self.splits_dir = os.path.join(self.root_dir, "splits")
-
         annots_fp = os.path.join(self.root_dir, "tava", "annots.npy")
         annots_data = np.load(annots_fp, allow_pickle=True).item()
         # K/D/R/T/w2c : #came x (3x3) / (5,) / (3,3) / (3,1) / (4x4)

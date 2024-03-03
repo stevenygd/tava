@@ -38,7 +38,6 @@ def _dataset_frame_split(parser: SubjectParser, split: str):
             allow_pickle=True
         ).item()
         fname = int(split.split("_")[1][len("fid"):])
-        breakpoint()
         fid = meta_data["fids"].index(fname)
         frame_ids = [fid]
     else:

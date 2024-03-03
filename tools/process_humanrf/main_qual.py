@@ -30,19 +30,31 @@ def process_camera(root_dir, downscale_factor : int =4):
     for camera in cameras:
         # camera.camera
         camera = camera.get_downscaled_camera(downscale_factor=downscale_factor)
-        c2w = camera.extrinsic_matrix_cam2world()   # (4, 4)
-        w2c = np.array(np.linalg.inv(c2w))          # (4, 4)
+        # c2w = camera.extrinsic_matrix_cam2world()   # (4, 4)
+        # w2c = np.array(np.linalg.inv(c2w))          # (4, 4)
+        # c2w = np.array(
+        #     [[1, 0, 0, 2.9691],
+        #      [0, 1, 0, 0.4892],
+        #      [0, 0, 1, -0.539],
+        #      [0, 0, 0, 1],
+        #     ]
+        # )
+        
+        c2w = np.array(
+            # [[-1., 0., 0., 0.45],
+            # [ 0., -1., 0., 0.4],
+            # [ 0., 0., 1., -3.1],
+            # [ 0., 0., 0., 1.]]
+            [[-1., 0., 0., 0.48962471],
+             [0., -1., 0., 0.53694844],
+             [0., 0., 1., -3.96953058],
+             [0., 0., 0., 1.]]
+        ).reshape(4, 4)
+        w2c = np.linalg.inv(c2w)
         R = w2c[:3, :3].reshape(1, 3, 3)
         T = w2c[:3, -1].reshape(1, 3, 1)
+        w2c = w2c.reshape(1, 4, 4)
         K = np.array(camera.intrinsic_matrix()).reshape(1, 3, 3)  # (3, 3) 
-        w2c = np.array(
-            [[1, 0, 0, 2.9691],
-             [0, 1, 0, 0.4892],
-             [0, 0, 1, -0.539],
-             [0, 0, 0, 1],
-            ]
-        )
-        w2c.reshape(1, 4, 4)
         D = np.array(
             [float(camera.k1), float(camera.k2), 0., 0., float(camera.k3)]
         ).reshape(1, 5)
@@ -72,6 +84,8 @@ def process_imgs(root_dir, camera_names, actor_id: int = 2):
     """
     if actor_id == 2:
         fids = [60, 100, 205]
+    elif actor_id == 3:
+        fids = [20, 160, 200]
     else:
         raise NotImplemented
     
@@ -102,42 +116,28 @@ def process_imgs(root_dir, camera_names, actor_id: int = 2):
     return img_out, mask_out, {"fids": fids}
 
 
-def process_pose(pose_dir, fids, rest_frame=0):
+def process_pose(pose_dir, fids, subject_id, rest_frame=0):
     """Processing pose into a format the codebase can use. """
-    pose_data = {
-        # Rest pose
-        "lbs_weights": None,    # 6890 x 24
-        "rest_verts": None,     # 6890 x 3
-        "rest_joints": None,    # 24x3
-        # "rest_tfs": None,       # 24x4x4,
-        "rest_tfs_bone": None,  # 24x4x4
+    pose_data = np.load(
+        f"/home/guandao/tava/data/actorhq_dataset/Actor{subject_id:02d}/Sequence1/4x/tava/pose_data.npy",
+        allow_pickle=True
+    ).item()
+    pose_data.update({
         # Per frame pose,
         "verts": [],            # N x 6890 x 3,
         "joints": [],           # N x 24 x 3,
         # "tfs": [],              # N x 24 x 4 x 4,
         "tf_bones": [],         # N x 24 x 4 x 4,
         "params": [],           # N x 78 (or dim input) - use beta here
-    }
-    # # Load shape
-    bodymodel = pickle.load(open(
-        "/home/guandao/lagrangian_gaussian_splatting/smplx/body_models/smpl/SMPL_NEUTRAL.pkl", 
-        "rb"), 
-        encoding="latin1")
-    pose_data["lbs_weights"] = bodymodel["weights"].astype(np.float32)
+    })
+    # Load shape
+    # bodymodel = pickle.load(open(
+    #     "/home/guandao/tava/smplx/body_models/smpl/SMPL_NEUTRAL.pkl", 
+    #     "rb"), 
+    #     encoding="latin1")
+    # pose_data["lbs_weights"] = bodymodel["weights"].astype(np.float32)
     print("Processing pose...")
     for fid in tqdm.tqdm(fids):
-        if rest_frame == fid:
-            pose = np.load(osp.join(pose_dir, f"{fid:04d}.pkl"), allow_pickle=True)
-            pose_data["rest_verts"] = pose["vertices"].cpu().detach().numpy().reshape(6890, 3)
-            pose_data["rest_joints"] = pose["joints"][:, :24].cpu().detach().numpy().reshape(24, 3)
-            tf_bones = pose["bone_transform_mat"][0] # 24x4x4
-            global_transform = torch.eye(4)
-            global_transform[:3, -1] = pose["transl"][0]
-            global_transform = global_transform[None, ...].repeat(
-                tf_bones.shape[0], 1, 1)
-            tf_bones = torch.bmm(global_transform.to(tf_bones.device), tf_bones)
-            tf_bones = tf_bones.cpu().detach().numpy().reshape(24, 4, 4)
-            pose_data["rest_tfs_bone"] = tf_bones
         pose = np.load(osp.join(pose_dir, f"{fid:04d}.pkl"), allow_pickle=True)
         # All other frames
         # 1 x 6890 x 3
@@ -178,13 +178,8 @@ def process_split(out_dir, subject_id, fids, cnames):
             "train": train_split, 
             "test": test_split
         }
-    if subject_id == 2:
-        _train_fid_filter_ = lambda fid: True
-        _train_cam_filter_ = lambda cname: True
-        
-    else:
-        raise NotImplemented
-    
+    _train_fid_filter_ = lambda fid: True
+    _train_cam_filter_ = lambda cname: True
     split_info = make_split(_train_fid_filter_, _train_cam_filter_)
     np.save(osp.join(out_dir, "splits", "train.npy"), split_info["train"])
     np.save(osp.join(out_dir, "splits", "test.npy"), split_info["test"])
@@ -201,7 +196,7 @@ if __name__ == "__main__":
     os.makedirs(out_dir, exist_ok=True)
     camera_info, camera_meta_info = process_camera(root_dir)
     img_fnames, mask_fnames, frames_meta_info = process_imgs(
-        root_dir, camera_meta_info["cam_names"])
+        root_dir, camera_meta_info["cam_names"], subject_id)
     annots = {
         "cams": camera_info,
         "ims": img_fnames,
@@ -210,7 +205,7 @@ if __name__ == "__main__":
     np.save(osp.join(out_dir, "annots.npy"), annots)
     
     # Handle pose
-    pose_data = process_pose(pose_dir, frames_meta_info["fids"], 
+    pose_data = process_pose(pose_dir, frames_meta_info["fids"], subject_id,
                              rest_frame=frames_meta_info["fids"][0])
     np.save(osp.join(out_dir, "pose_data.npy"), pose_data)
     

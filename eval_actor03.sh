@@ -1,6 +1,6 @@
 #! /bin/bash
 
-ARGS_EVAL="engine=evaluator eval_cache_dir=eval_imgs compute_metrics=true resume=true eval_per_gpu=1000 test_chunk=8192"
+ARGS_EVAL="engine=evaluator eval_cache_dir=eval_imgs compute_metrics=true resume=true eval_per_gpu=1000 test_chunk=10000"
 python launch.py \
     --config-name=mipnerf_dyn_humanrf \
     dataset=humanrf \

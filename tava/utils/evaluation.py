@@ -55,6 +55,18 @@ def eval_epoch(
         data = data_preprocess_func(data)
         rays = data.pop("rays")
         pixels = data.pop("pixels")
+        # save images
+        if save_dir is not None:
+            sid, meta_id, cid = (
+                data.get("subject_id", ""),
+                data.get("meta_id", ""),
+                data.get("camera_id", ""),
+            )
+            pred_image_path = os.path.join(
+                save_dir, f"{index:04d}_{sid}_{meta_id}_{cid}_pred.png"
+            )
+            if os.path.isfile(pred_image_path):
+                continue
 
         # forward
         pred_color, pred_depth, pred_acc, pred_warp = render_image(

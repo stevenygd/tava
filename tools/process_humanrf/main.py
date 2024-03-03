@@ -147,7 +147,7 @@ def process_pose(pose_dir, fids, rest_frame=0):
     }
     # # Load shape
     bodymodel = pickle.load(open(
-        "/home/guandao/lagrangian_gaussian_splatting/smplx/body_models/smpl/SMPL_NEUTRAL.pkl", 
+        "/home/guandao/tava/smplx/body_models/smpl/SMPL_NEUTRAL.pkl", 
         "rb"), 
         encoding="latin1")
     pose_data["lbs_weights"] = bodymodel["weights"].astype(np.float32)

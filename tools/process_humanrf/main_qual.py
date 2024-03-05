@@ -39,16 +39,19 @@ def process_camera(root_dir, downscale_factor : int =4):
         #      [0, 0, 0, 1],
         #     ]
         # )
-        
         c2w = np.array(
-            # [[-1., 0., 0., 0.45],
-            # [ 0., -1., 0., 0.4],
-            # [ 0., 0., 1., -3.1],
-            # [ 0., 0., 0., 1.]]
-            [[-1., 0., 0., 0.48962471],
-             [0., -1., 0., 0.53694844],
-             [0., 0., 1., -3.96953058],
-             [0., 0., 0., 1.]]
+        #     # [[-1., 0., 0., 0.45],
+        #     # [ 0., -1., 0., 0.4],
+        #     # [ 0., 0., 1., -3.1],
+        #     # [ 0., 0., 0., 1.]]
+        #     [[-1., 0., 0., 0.48962471],
+        #      [0., -1., 0., 0.53694844],
+        #      [0., 0., 1., -3.96953058],
+        #      [0., 0., 0., 1.]]
+            [[-1., 0., 0., 0.489624 - 0.5],
+            [0., -1., 0., 0.53694844 + 0.4],
+            [0., 0., 1., -3.96953058 + 1.8],
+            [0., 0., 0., 1.]]
         ).reshape(4, 4)
         w2c = np.linalg.inv(c2w)
         R = w2c[:3, :3].reshape(1, 3, 3)
@@ -85,7 +88,8 @@ def process_imgs(root_dir, camera_names, actor_id: int = 2):
     if actor_id == 2:
         fids = [60, 100, 205]
     elif actor_id == 3:
-        fids = [20, 160, 200]
+        # fids = [20, 160, 200]
+        fids = [160, 200]
     else:
         raise NotImplemented
     
@@ -122,20 +126,16 @@ def process_pose(pose_dir, fids, subject_id, rest_frame=0):
         f"/home/guandao/tava/data/actorhq_dataset/Actor{subject_id:02d}/Sequence1/4x/tava/pose_data.npy",
         allow_pickle=True
     ).item()
+    # Update new poses
     pose_data.update({
         # Per frame pose,
         "verts": [],            # N x 6890 x 3,
         "joints": [],           # N x 24 x 3,
-        # "tfs": [],              # N x 24 x 4 x 4,
+        # "tfs": [],            # N x 24 x 4 x 4,
         "tf_bones": [],         # N x 24 x 4 x 4,
         "params": [],           # N x 78 (or dim input) - use beta here
     })
-    # Load shape
-    # bodymodel = pickle.load(open(
-    #     "/home/guandao/tava/smplx/body_models/smpl/SMPL_NEUTRAL.pkl", 
-    #     "rb"), 
-    #     encoding="latin1")
-    # pose_data["lbs_weights"] = bodymodel["weights"].astype(np.float32)
+    # Update rest poses
     print("Processing pose...")
     for fid in tqdm.tqdm(fids):
         pose = np.load(osp.join(pose_dir, f"{fid:04d}.pkl"), allow_pickle=True)

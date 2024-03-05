@@ -263,6 +263,8 @@ class SNARFDPEncoder(nn.Module):
 
         # Append the global transforms for background samples
         if self.with_bkgd:
+            # print("XCano:", x_cano.shape)
+            # print("Weights", weights.shape, transforms.shape)
             assert weights.shape[-1] == transforms.shape[0] + 1
             # [n_transforms + 1, 4, 4]
             transforms = torch.cat(
